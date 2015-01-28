@@ -15,6 +15,10 @@ class Steam
 
     public function getAppInfo($appid)
     {
+        if (empty($appid)) {
+            return false;
+        }
+
         $url = sprintf(
             'http://store.steampowered.com/api/appdetails/?appids=%s',
             $appid
@@ -48,8 +52,12 @@ class Steam
 
     public function getOwnedGames($steamid)
     {
+        if (empty($steamid)) {
+            return false;
+        }
+
         $url = sprintf(
-            'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s',
+            'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=1&include_played_free_games=1',
             $this->apikey,
             $steamid
         );
@@ -67,6 +75,10 @@ class Steam
 
     public function resolveVanityURL($vanityurl)
     {
+        if (empty($vanityurl)) {
+            return false;
+        }
+
         $url = sprintf(
             'http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s',
             $this->apikey,

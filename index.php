@@ -13,34 +13,35 @@ if (empty($players)) {
     $players = array('', '');
 } else {
     $steam = new Steam(APIKEY);
-    $all_games = $steam->getGameNames();
-    $common_games_appids = array();
+    $common_games = array();
     foreach ($players as $player) {
         $steamid = $steam->resolveVanityURL($player);
         if (!$steamid) {
             $steamid = $player;
         }
-        $owned_games = $steam->getOwnedGames($steamid);
-        $owned_game_ids = array();
 
-        if (!empty($owned_games)) {
-            foreach ($owned_games as $game) {
-                $owned_game_ids[] = $game->appid;
+        $owned_games_raw = $steam->getOwnedGames($steamid);
+        $owned_games = array();
+
+        if (!empty($owned_games_raw)) {
+            foreach ($owned_games_raw as $owned_game) {
+                $owned_games[$owned_game->appid] = $owned_game;
             }
         }
 
-        if (empty($common_games_appids)) {
-            $common_games_appids = $owned_game_ids;
+        if (empty($common_games)) {
+            $common_games = $owned_games;
         } else {
-            $common_games_appids = array_intersect($common_games_appids, $owned_game_ids);
+            $common_games = array_intersect_key($common_games, $owned_games);
         }
     }
-    $common_games_names = array();
-    foreach ($common_games_appids as $appid) {
-        $common_games_names[] = $all_games[$appid];
-    }
-    natcasesort($common_games_names);
 }
+
+$game_names = array();
+foreach ($common_games as $key => $row) {
+    $game_names[$key] = $row->name;
+}
+array_multisort($game_names, SORT_ASC, $common_games);
 
 ?>
 
@@ -77,9 +78,9 @@ if (empty($players)) {
 
     <pre>
     <?php
-    if (!empty($common_games_names)) :
-        foreach ($common_games_names as $game_name) :
-            echo $game_name;
+    if (!empty($common_games)) :
+        foreach ($common_games as $common_game) :
+            echo $common_game->name;
     ?>
 
     <?php
