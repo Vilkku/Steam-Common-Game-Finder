@@ -1,4 +1,66 @@
+body {
+    background: #171a21;
+    color: rgb(184, 182, 180);
+    font-family: "Motiva Sans", sans-serif;
+}
+
+a,
+a:visited {
+    color: rgb(184, 182, 180);
+}
+
+a:hover,
+a:active {
+    color: white;
+}
+
 form ul {
     list-style: none outside none;
     padding: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.game-list {
+    list-style: none outside none;
+    padding: 0;
+}
+
+.game-list li {
+    margin-bottom: 2px;
+}
+
+.game-list label {
+    cursor: pointer;
+}
+
+.game-list img {
+    vertical-align: middle;
+}
+
+.game-list li ul {
+    margin: 5px 0;
+}
+
+.color-100 {
+    color: green;
+}
+
+.color-90,
+.color-80,
+.color-70,
+.color-60 {
+    color: orange;
+}
+
+.color-50,
+.color-40,
+.color-30,
+.color-20,
+.color-10,
+.color-0 {
+    color: red;
 }

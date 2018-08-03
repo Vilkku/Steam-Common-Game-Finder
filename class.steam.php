@@ -95,4 +95,23 @@ class Steam
 
         return $steamid;
     }
+
+    public function getProfileName($steamid)
+    {
+        if (empty($steamid)) {
+            return false;
+        }
+
+        $url = sprintf(
+            'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s',
+            $this->apikey,
+            $steamid
+        );
+
+        $results = json_decode(file_get_contents($url));
+
+        $name = $results->response->players[0]->personaname;
+
+        return $name;
+    }
 }

@@ -9,39 +9,56 @@ if (isset($_GET['player'])) {
     $players = $_GET['player'];
 }
 
+$common_games = array();
+$player_names = array();
+
 if (empty($players)) {
     $players = array('', '');
 } else {
     $steam = new Steam(APIKEY);
-    $common_games = array();
     foreach ($players as $player) {
         $steamid = $steam->resolveVanityURL($player);
         if (!$steamid) {
             $steamid = $player;
         }
 
+        $player_name = $steam->getProfileName($steamid);
         $owned_games_raw = $steam->getOwnedGames($steamid);
-        $owned_games = array();
+
+        $player_names[$steamid] = $player_name;
 
         if (!empty($owned_games_raw)) {
             foreach ($owned_games_raw as $owned_game) {
                 $owned_games[$owned_game->appid] = $owned_game;
-            }
-        }
 
-        if (empty($common_games)) {
-            $common_games = $owned_games;
-        } else {
-            $common_games = array_intersect_key($common_games, $owned_games);
+                if (!isset($common_games[$owned_game->appid])) {
+                    $common_games[$owned_game->appid] = array(
+                        'game' => $owned_game,
+                        'players' => array($player_name)
+                    );
+                } else {
+                    $common_games[$owned_game->appid]['players'][] = $player_name;
+                }
+            }
         }
     }
 }
 
-$game_names = array();
-foreach ($common_games as $key => $row) {
-    $game_names[$key] = $row->name;
+foreach ($common_games as $key => $game) {
+    if (count($game['players']) < 2) {
+        unset($common_games[$key]);
+    }
 }
-array_multisort($game_names, SORT_ASC, $common_games);
+
+function gameSort($a, $b) {
+    if (count($a['players']) === count($b['players'])) {
+        return strcasecmp($a['game']->name, $b['game']->name);
+    }
+
+    return (count($a['players']) < count($b['players'])) ? 1 : -1;
+}
+
+usort($common_games, '\SteamCommonGameFinder\gameSort');
 
 ?>
 
@@ -56,13 +73,14 @@ array_multisort($game_names, SORT_ASC, $common_games);
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="container">
     <h1>Steam Common Game Finder</h1>
     <p>Find what games you have in common with your friends</p>
 
     <form id="players" method="get" action="">
         <ul>
             <?php
-            foreach ($players as $player) :
+            foreach ($players as $player):
             ?>
             <li class="input-player">
                 <input type="text" name="player[]" value="<?php echo $player; ?>">
@@ -76,18 +94,37 @@ array_multisort($game_names, SORT_ASC, $common_games);
         <input type="submit" value="Find Games!">
     </form>
 
-    <pre>
+    <ul class="game-list">
     <?php
-    if (!empty($common_games)) :
-        foreach ($common_games as $common_game) :
-            echo $common_game->name;
+    foreach ($common_games as $game):
     ?>
+        <li>
+            <?php
+                $players_without_game = array_diff($player_names, $game['players']);
+                $players_with_game = array_diff($player_names, $players_without_game);
 
+                if (!empty($players_without_game)) {
+                    $percent_rounded = round(count($players_with_game) / count($players) * 100, -1);
+                    $class = 'color-'.$percent_rounded;
+                } else {
+                    $class = 'color-100';
+                }
+
+                echo '<img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/'.$game['game']->appid.'/'.$game['game']->img_icon_url.'.jpg" /> <label class="game-title"><a href="https://store.steampowered.com/app/'.$game['game']->appid.'">'.$game['game']->name.'</a> <span class="'.$class.'" title="'.implode(', ', $players_with_game).'">('.count($game['players']).' / '.count($players).')</span></label>';
+            ?>
+            <?php if (!empty($players_without_game)): ?>
+            <ul class="players-without-game" style="display: none;">
+                <?php foreach ($players_without_game as $player): ?>
+                <li><?php echo $player; ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+        </li>
     <?php
-        endforeach;
-    endif;
+    endforeach;
     ?>
-    </pre>
+    </ul>
+    </div>
 
     <script>
         $(document).ready(function() {
@@ -116,6 +153,10 @@ array_multisort($game_names, SORT_ASC, $common_games);
             var playerInput = $('.input-player').first().clone(true);
             playerInput.find('input').val('');
             refreshButtons();
+
+            $('.game-title').on('click', function () {
+                $(this).closest('li').find('.players-without-game').toggle();
+            });
         });
     </script>
 </body>
